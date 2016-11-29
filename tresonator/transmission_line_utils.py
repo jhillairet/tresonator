@@ -22,6 +22,7 @@ def ZL_2_Zin(L,Z0,gamma,ZL):
     -------
     Zin: input impedance
     """
+    
     assert L > 0
     assert Z0 > 0
     
@@ -51,12 +52,13 @@ def transfer_matrix(L,V0,I0,Z0,gamma):
     VL: voltage at length L
     IL: current at length L
     """
-    assert L > 0
-    assert Z0 > 0
-    
-    Transfer_matrix = np.array([[np.cosh(gamma*L), Z0*np.sinh(gamma*L)], 
+    if Z0 <= 0:
+        raise ValueError
+        
+    transfer_matrix = np.array([[np.cosh(gamma*L), Z0*np.sinh(gamma*L)], 
                                 [np.sinh(gamma*L)/Z0, np.cosh(gamma*L)]])
-    A = Transfer_matrix.dot(np.array([[V0],[I0]]))              
+    U = np.array([V0,I0])
+    A = transfer_matrix @ U           
     VL = A[0]
     IL = A[1]
     return VL, IL
