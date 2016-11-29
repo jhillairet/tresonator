@@ -22,6 +22,9 @@ def ZL_2_Zin(L,Z0,gamma,ZL):
     -------
     Zin: input impedance
     """
+    assert L > 0
+    assert Z0 > 0
+    
     Zin = Z0*(ZL + Z0*np.tanh(gamma*L))/(Z0 + ZL*np.tanh(gamma*L))
     return Zin
 
@@ -48,6 +51,8 @@ def transfer_matrix(L,V0,I0,Z0,gamma):
     VL: voltage at length L
     IL: current at length L
     """
+    assert L > 0
+    assert Z0 > 0
     
     Transfer_matrix = np.array([[np.cosh(gamma*L), Z0*np.sinh(gamma*L)], 
                                 [np.sinh(gamma*L)/Z0, np.cosh(gamma*L)]])
@@ -74,6 +79,10 @@ def V0f_2_VL(L, V0f, gamma, reflection_coefficient):
     --------
     VL : (total) voltage at length L 
     """ 
+    assert L > 0
+    assert gamma > 0
+    assert reflection_coefficient > 0
+    
     VL = V0f*(np.exp(-gamma*L) + reflection_coefficient*np.exp(+gamma*L))
     return VL       
     

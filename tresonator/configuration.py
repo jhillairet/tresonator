@@ -38,28 +38,24 @@ class Configuration(object):
         """
         Default resonator configuration
         """
-        # TL sections impedances
-        R = 29.8 # feeder from generator impedance
-        # 
-        ZC2 = 29.8 # ZC2 for branch1 (the fix)
-        
+       
         # Resonator TL section description
         #
         # Item      Length(mm)	Zc(Ohm) Inner/Outer Diam(m)	Inner   Outer
         # ---------------------------------------------------------------------
-        # L1(DUT)	Variable	26.83   0.140,0.219         SS      SS  CEA extension
+        # L1(DUT)	Variable	    26.83   0.140,0.219         SS      SS  CEA extension
         # or
         # SSA13:
-        # L1(DUT)	Variable	33.14   0.126,0.219         Au      SS  DUT extension  
+        # L1(DUT)	Variable	    33.14   0.126,0.219         Au      SS  DUT extension  
         # SSA50:
-        # L1(DUT)	Variable	32.20   0.12792,0.219       Cu      SS  DUT extension  
-        # L2     	1100        18.72   0.1683,0.23         Cu      Cu
-        # L3        1021.5      29.8    0.14,0.23           Cu      Cu
-        # L4        100         49.5    0.1,0.23            Ag      Ag
-        # L5        114         29.8    0.14,0.23           Ag      Ag
-        # L6        661.2       29.8    0.14,0.23           Ag      Ag
-        # L7        100         49.94   idem  L4            Ag      Ag
-        # L8        1497.5      29.8    0.14,0.23           SS      SS
+        # L1(DUT)	Variable	    32.20   0.12792,0.219       Cu      SS  DUT extension  
+        # L2     	  1100       18.72   0.1683,0.23         Cu      Cu
+        # L3        1021.5     29.8    0.14,0.23           Cu      Cu
+        # L4        100        49.5    0.1,0.23            Ag      Ag
+        # L5        114        29.8    0.14,0.23           Ag      Ag
+        # L6        661.2      29.8    0.14,0.23           Ag      Ag
+        # L7        100        49.94   idem  L4            Ag      Ag
+        # L8        1497.5     29.8    0.14,0.23           SS      SS
         # L9(CEA)   Variable	26.82   0.140,0.219         SS      SS
         #
         
@@ -112,6 +108,7 @@ class Configuration(object):
         Z_DUT [optionnal] : input impedances at each sections of the DUT
                                branch, from short to T   
         """        
+        
         # DUT BRANCH
         Z_DUT = []
         Z_DUT.append(ZL_2_Zin(self.TLs[0].L, self.TLs[0].Zc, self.TLs[0].gamma(self.f), self.Z_short_DUT))
