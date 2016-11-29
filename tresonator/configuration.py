@@ -145,13 +145,17 @@ class Configuration(object):
         """
         Zin, Z_CEA, Z_DUT = self.input_impedance()
         
+        # Corresponding Transmission Line Section indexes
+        TL_indexes_DUT = [4,3,2,1,0]
+        TL_indexes_CEA = [5,6,7,8]
+
         # calculate the voltage and current along the T-resonator branches
-        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_CEAbranch(Zin, Z_CEA)
-        L_DUT, V_DUT, I_DUT, Z_DUT = self._voltage_current_CEAbranch(Zin, Z_DUT)
+        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_branch(Zin, Z_CEA[3], TL_indexes_CEA)
+        L_DUT, V_DUT, I_DUT, Z_DUT = self._voltage_current_branch(Zin, Z_DUT[4], TL_indexes_DUT)
         
         return L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT
         
-    def _voltage_current_CEAbranch(self, Zin, Z_CEA):
+    def _voltage_current_branch(self, Zin, Zbranch, TL_indexes):
         # spatial sampling 
         dl = 1e-3   
         # Input voltage from input power and feeder impedance
@@ -165,61 +169,31 @@ class Configuration(object):
 
         # Going from T to short 
         V0.append( Vin*(1 + rho_in) ) # total voltage
-        I0.append( V0[0]/Z_CEA[3] )
-        _L = np.arange(start=0, stop=self.TLs[5].L, step=dl)         
-        for l in _L:
-            _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[5].Zc, self.gammas[5])
-            V.append(_V)
-            I.append(_I)
-            Z.append(_V/_I)
-        L_full.append(_L)
+        I0.append( V0[0]/Zbranch)
         
-        V0.append( V[-1] )
-        I0.append( I[-1] )
-        _L = np.arange(start=0, stop=self.TLs[6].L, step=dl)
-        for l in _L:
-            _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[6].Zc, self.gammas[6])
-            V.append(_V)
-            I.append(_I)
-            Z.append(_V/_I)
-        L_full.append(_L + L_full[-1][-1])                                    
- 
-        V0.append( V[-1] )
-        I0.append( I[-1] )
-        _L = np.arange(start=0, stop=self.TLs[6].L, step=dl)
-        for l in _L:
-            _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[6].Zc, self.gammas[6])
-            V.append(_V)
-            I.append(_I)
-            Z.append(_V/_I)
-        L_full.append( _L + L_full[-1][-1] )                                      
-        
-        V0.append( V[-1] )
-        I0.append( I[-1] )
-        _L = np.arange(start=0, stop=self.TLs[7].L, step=dl)
-        for l in _L:
-            _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[6].Zc, self.gammas[7])
-            V.append(_V)
-            I.append(_I)
-            Z.append(_V/_I)
-        L_full.append( _L + L_full[-1][-1] )   
-  
-        V0.append( V[-1] )
-        I0.append( I[-1] )
-        _L = np.arange(start=0, stop=self.TLs[8].L, step=dl)
-        for l in _L:
-            _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[6].Zc, self.gammas[8])
-            V.append(_V)
-            I.append(_I)
-            Z.append(_V/_I)
-        L_full.append( _L + L_full[-1][-1] )  
+        # For each transmission line section,
+        # propagates the V,I,Z from the last section values to the length of current section
+        for TL_index in TL_indexes:
+            _L = np.arange(start=0, stop=self.TLs[TL_index].L, step=dl)         
+            for l in _L:
+                _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[TL_index].Zc, self.gammas[TL_index])
+                V.append(_V)
+                I.append(_I)
+                Z.append(_V/_I)
+            # cumulate the length array    
+            if L_full:
+                L_full.append(_L + L_full[-1][-1])
+            else:
+                L_full.append(_L) # 1st step
+            # section intersection values
+            V0.append( V[-1] )
+            I0.append( I[-1] )
         
         # convert list into arrays
         V = np.asarray(V)
         I = np.asarray(I)
         Z = np.asarray(Z)
         L = np.concatenate(np.asarray([np.asarray(_L) for _L in L_full]))
-
         
         return L, V, I, Z
     
