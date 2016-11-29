@@ -52,15 +52,33 @@ class Coax(object):
         alpha = Rs/pi*(1/self.Dint + 1/self.Dout) / (2*self.Zc)
         
         return alpha
+    
+    def beta(self, f):
+        """
+        Transmission line reak wavenumber (=omega/c)
+        """
+        return 2*pi*f/c # TEM mode in coaxial -> vacuum wavenumber
         
-    def gamma(self, f):
+    def gamma(self, f, additional_loss=1):
         """
         Transmission line propagation constant (wavenumber)
+        
+        gamma = alpha + j*beta
+        
+        Args
+        ----
+        f : frequency [Hz]
+        additional_loss: multiplying coefficient to alpha (real part)
+        
+        Returns
+        -------
+        gamma: complex
+               Wavenumber (complex) of the transmission line
         """
         if f <= 0: raise ValueError
         alpha = self.alpha(f)
-        beta = 2*pi*f/c # TEM mode in coaxial -> vacuum wavenumber 
-        gamma = alpha + 1j*beta
+        beta = self.beta(f) 
+        gamma = additional_loss*alpha + 1j*beta
         return gamma
         
     def __repr__(self):
