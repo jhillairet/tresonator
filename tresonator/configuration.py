@@ -26,6 +26,9 @@ class Configuration(object):
         
         # feeder impedance 
         self.R = 29.8 # Ohm
+        # Location of voltage probes on the resonator (starting from T)
+        self.L_Vprobe_CEA_fromT = 1.236
+        self.L_Vprobe_DUT_fromT = 0.669
         
         # relative additional loss coefficient to multiply with the loss in the
         # coaxial transmission line, in order to match measurements 
@@ -128,6 +131,23 @@ class Configuration(object):
         Zin = (Z_DUT[-1]*Z_CEA[-1])/(Z_DUT[-1] + Z_CEA[-1])
         
         return Zin, Z_CEA, Z_DUT
+    
+    def S11(self):
+        """
+        Returns the S11 of the T-resonator at a given frequency
+        
+        Returns
+        -------
+        S11 : 
+        """
+        Zin, Z_CEA, Z_DUT = self.input_impedance()
+        
+        S11 = (Zin - self.R)/(Zin + self.R)
+        
+        return S11
+        
+    def S11dB(self):
+        return 20*np.log10(np.abs(self.S11()))
         
         
     def voltage_current(self):
