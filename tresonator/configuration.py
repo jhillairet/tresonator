@@ -5,11 +5,27 @@ Configuration of the T-resonator
 from . constants import *
 from . coaxial import Coax
 from . transmission_line_utils import ZL_2_Zin, transfer_matrix
+from scipy.optimize import minimize
 import numpy as np
 
 class Configuration(object):
+    """
+    T-resonator configuration.
+    
+    Args:
+    -----
+    f:  float>0
+        frequency [Hz]
+    P_in: float>0
+        input power [W]
+    L_DUT: float>0
+        short length at DUT side branch
+    L_CEA: float>0
+        short length at CEA side branch
+    additional_losses: float
+        Multiplicative factor to propagation losses
+    """            
     def __init__(self, f, P_in, L_DUT, L_CEA, additional_losses=1):
-                
         # Source frequency [Hz]
         self.f = f 
         
@@ -29,6 +45,9 @@ class Configuration(object):
         # Location of voltage probes on the resonator (starting from T)
         self.L_Vprobe_CEA_fromT = 1.236
         self.L_Vprobe_DUT_fromT = 0.669
+        
+        # Maximum number of iterations during a short lengths optimization
+        self.NB_ITER_MAX = 5000
         
         # relative additional loss coefficient to multiply with the loss in the
         # coaxial transmission line, in order to match measurements 
@@ -88,7 +107,6 @@ class Configuration(object):
         TLs.append(Coax(self.L_CEA, 0.140,  0.219, sigma=conductivity_SS))
         
         # Calculate the losses for each section
-        
         gammas = []        
         for TL in TLs:
             gamma = TL.gamma(self.f, self.additional_losses)
@@ -140,7 +158,7 @@ class Configuration(object):
         -------
         S11 : 
         """
-        Zin, Z_CEA, Z_DUT = self.input_impedance()
+        Zin, _ , _ = self.input_impedance()
         
         S11 = (Zin - self.R)/(Zin + self.R)
         
@@ -170,8 +188,8 @@ class Configuration(object):
         TL_indexes_CEA = [5,6,7,8]
 
         # calculate the voltage and current along the T-resonator branches
-        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_branch(Zin, Z_CEA[3], TL_indexes_CEA)
-        L_DUT, V_DUT, I_DUT, Z_DUT = self._voltage_current_branch(Zin, Z_DUT[4], TL_indexes_DUT)
+        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_branch(Zin, Z_CEA[-1], TL_indexes_CEA)
+        L_DUT, V_DUT, I_DUT, Z_DUT = self._voltage_current_branch(Zin, Z_DUT[-1], TL_indexes_DUT)
         
         return L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT
         
@@ -217,3 +235,62 @@ class Configuration(object):
         
         return L, V, I, Z
     
+    def optimize_short_lengths(self):
+        """
+        Solve the matching problem in order to find the length of the variable
+        section of the CEA and DUT branches.
+        
+        
+        Returns
+        -------
+        L: tuple
+           optimized short lengths (L_DUT, L_CEA)
+        """
+        
+        L_opt = self._search_short_lengths()
+        if L_opt is not None:
+            return L_opt
+        else:
+            raise ValueError('No solution found !')
+
+    def _search_short_lengths(self):
+        """
+        Optimization routine on T-resonator variable length (CEA and DUT branches)
+        """
+    
+        # In order a correct solution, repeats the minimize call
+        # until a physical solution is found        
+        random_lengths = 0 + (0.5 - 0)*np.random.rand(2, self.NB_ITER_MAX)
+
+        # L_DUT, L_CEA value boundaries (min, max)
+        bounds = [(1e-3,1),(1e-3,1)] # min is not 0 to avoid problem... 
+                
+        for nb_iter in range(self.NB_ITER_MAX):
+            L0 = random_lengths[:,nb_iter]   
+            res = minimize(self._optim_fun_impedance_matching, L0, 
+                           bounds=bounds,
+                           options={'maxiter':self.NB_ITER_MAX})
+            if res.success:
+                if np.isclose(res.x[0], 1e-3) or np.isclose(res.x[1], 1e-3):
+                    pass # length too low ->  Repeat
+                elif np.isclose(res.x[0], 1) or np.isclose(res.x[1], 1):
+                    pass # length too high ->  Repeat
+                elif res.x[0] > res.x[1]:
+                    pass # L_DUT > L_CEA -> repeat
+                else:
+                    L_opt = res.x
+                    print('Solution found: L={}'.format(L_opt))
+                    break # True good solution found
+        else:
+            print('No solution found !')
+            L_opt = None
+        return L_opt
+
+
+    def _optim_fun_impedance_matching(self, L):
+        _cfg = Configuration(self.f, self.P_in, L_DUT=L[0], L_CEA=L[1], 
+                            additional_losses=self.additional_losses)
+        # Minimize the return loss
+        S11 = np.abs(_cfg.S11())
+        return S11 
+        
