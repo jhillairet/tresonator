@@ -14,15 +14,15 @@ P_in = 80e3 # W
 # setup the initial resonator configuration, in which L_DUT and L_CEA
 # are not the necessary optimum values
 Lsc_DUT = 0.0426 # m
-Lsc_CEA = 0.0686 # m
+Lsc_CEA = 0.0586 # m
+
+
 cfg = T.Configuration(f, P_in, Lsc_DUT, Lsc_CEA, additional_losses=1)
 
 # Calculates the voltage and current along the transmission lines
 L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT = cfg.voltage_current();
     
 # Plotting V,I
-
-
 fig, ax = plt.subplots(2,1, sharex=True)
 ax[0].plot(-L_DUT, np.abs(V_DUT)/1e3, L_CEA, np.abs(V_CEA)/1e3, lw=2)
 ax[0].set_ylim(0, 45)
@@ -30,7 +30,6 @@ ax[0].grid(True)
 ax[0].set_xlim(min(-L_DUT), max(L_CEA))
 ax[0].axvline(x=cfg.L_Vprobe_CEA_fromT, ls='--', color='gray', lw=3)
 ax[0].axvline(x=-cfg.L_Vprobe_DUT_fromT, ls='--', color='gray', lw=3)
-ax[0].set_xlabel('L [m]', fontsize=14)
 ax[0].set_ylabel('|V| [kV]', fontsize=14)
 
 ax[1].plot(-L_DUT, np.abs(I_DUT), L_CEA, np.abs(I_CEA), lw=2)
