@@ -37,8 +37,8 @@ class Configuration(object):
         self.L_CEA = L_CEA
         
         # Short Impedance [Ohm] 
-        self.Z_short_DUT = 0.0052 
-        self.Z_short_CEA = 0.0087 
+        self.Z_short_DUT = 0.01 
+        self.Z_short_CEA = 0.01 
         
         # feeder impedance 
         self.R = 29.8 # Ohm
@@ -232,39 +232,42 @@ class Configuration(object):
         
         return L, V, I, Z
     
-    def optimize_short_lengths(self):
+    def optimize_short_lengths(self, bounds=[(1e-3,200e-3),(1e-3,200e-3)]):
         """
         Solve the matching problem in order to find the length of the variable
         section of the CEA and DUT branches.
         
-        
+        Arguments
+        ---------
+        bounds : list of 2-tuples
+            Search bounds for L_DUT and L_CEA
+            [(L_DUT min, L_DUT max), (L_CEA min, L_CEA max)]
+            default : [(1e-3,1),(1e-3,1)]
+            
         Returns
         -------
         L: tuple
            optimized short lengths (L_DUT, L_CEA)
         """
         
-        L_opt = self._search_short_lengths()
+        L_opt = self._search_short_lengths(bounds)
         if L_opt is not None:
             return L_opt
         else:
             raise ValueError('No solution found !')
 
-    def _search_short_lengths(self):
+    def _search_short_lengths(self, bounds):
         """
         Optimization routine on T-resonator variable length (CEA and DUT branches)
         """
     
-        # In order a correct solution, repeats the minimize call
+        # In order to get a correct solution, repeats the minimize call
         # until a physical solution is found        
         random_lengths = 0 + (0.5 - 0)*np.random.rand(2, self.NB_ITER_MAX)
-
-        # L_DUT, L_CEA value boundaries (min, max)
-        bounds = [(1e-3,1),(1e-3,1)] # min is not 0 to avoid problem... 
-                
+               
         for nb_iter in range(self.NB_ITER_MAX):
             L0 = random_lengths[:,nb_iter]   
-            res = minimize(self._optim_fun_impedance_matching, L0, 
+            res = minimize(self._optim_fun_impedance_matching, L0,
                            bounds=bounds,
                            options={'maxiter':self.NB_ITER_MAX})
             if res.success:
@@ -272,8 +275,6 @@ class Configuration(object):
                     pass # length too low ->  Repeat
                 elif np.isclose(res.x[0], 1) or np.isclose(res.x[1], 1):
                     pass # length too high ->  Repeat
-                elif res.x[0] > res.x[1]:
-                    pass # L_DUT > L_CEA -> repeat
                 else:
                     L_opt = res.x
                     print('Solution found: L={}'.format(L_opt))
