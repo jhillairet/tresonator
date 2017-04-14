@@ -92,18 +92,15 @@ class Configuration(object):
         #      SSA13, CCFE Home-made: 219/126 -> 33.14 Ohm
         #      SSA50: 219/127.92 -> 32.2 Ohm
         TLs.append(Coax(self.L_DUT, 0.1279, 0.219, sigma=conductivity_Cu))
-        TLs.append(Coax(   1066e-3, 0.1683, 0.230, sigma=conductivity_Cu)) # was ZCinter=18.62 and Linter=1.1
-        TLs.append(Coax(   1033e-3, 0.140,  0.230, sigma=conductivity_Cu)) # 1021.5e-3 = 2.1215-Linter
+        TLs.append(Coax(   1100e-3, 0.1683, 0.230, sigma=conductivity_Cu)) # was ZCinter=18.62 and Linter=1.1
+        TLs.append(Coax(   1021e-3, 0.140,  0.230, sigma=conductivity_Cu)) # 1021.5e-3 = 2.1215-Linter
         TLs.append(Coax(    100e-3, 0.100,  0.230, sigma=conductivity_Ag)) # was ZC4=49.94 ### ZC for small reduction copper plating
-        TLs.append(Coax(    120e-3, 0.140,  0.230, sigma=conductivity_Ag))
+        TLs.append(Coax(    114e-3, 0.140,  0.230, sigma=conductivity_Ag))
         
         # CEA Branch
-        TLs.append(Coax(    687e-3, 0.140,  0.230, sigma=conductivity_Ag)) # coude
+        TLs.append(Coax(    728e-3, 0.140,  0.230, sigma=conductivity_Ag)) # coude
         TLs.append(Coax(    100e-3, 0.100,  0.230, sigma=conductivity_Ag))
-        # Dans le code d'Arnaud, une section de ligne supplementaire de 0.016m/ZC2/gamma_copper est
-        # ajoutee ici entre 7 et 8. Cette section n'est pas d??crite dans la documentation D0&D1. 
-        # Est-ce le bellows ?
-        TLs.append(Coax(   1513e-3, 0.140,  0.230, sigma=conductivity_SS))
+        TLs.append(Coax(   1512e-3, 0.140,  0.230, sigma=conductivity_SS))
         TLs.append(Coax(self.L_CEA, 0.140,  0.219, sigma=conductivity_SS))
         
         # Calculate the losses for each section
