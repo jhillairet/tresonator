@@ -25,7 +25,8 @@ class Configuration(object):
     additional_losses: float
         Multiplicative factor to propagation losses
     """            
-    def __init__(self, f, P_in, L_DUT, L_CEA, additional_losses=1):
+    def __init__(self, f, P_in, L_DUT, L_CEA, 
+                 Z_short_DUT=1e-2, Z_short_CEA=1e-2, additional_losses=1):
         # Source frequency [Hz]
         self.f = f 
         
@@ -37,8 +38,8 @@ class Configuration(object):
         self.L_CEA = L_CEA
         
         # Short Impedance [Ohm] 
-        self.Z_short_DUT = 0.01 
-        self.Z_short_CEA = 0.01 
+        self.Z_short_DUT = Z_short_DUT
+        self.Z_short_CEA = Z_short_CEA
         
         # feeder impedance 
         self.R = 29.8 # Ohm
