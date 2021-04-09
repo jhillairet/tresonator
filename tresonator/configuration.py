@@ -7,6 +7,9 @@ from . coaxial import Coax
 from . transmission_line_utils import ZL_2_Zin, transfer_matrix
 from scipy.optimize import minimize
 import numpy as np
+import skrf as rf
+from skrf.media import Coaxial
+
 
 class Configuration(object):
     """
@@ -293,3 +296,64 @@ class Configuration(object):
         S11 = np.abs(_cfg.S11())
         return S11 
         
+
+    def circuit(self, freq=None):
+        """
+        Returns the circuit object of the corresponding configuration
+    
+        Returns
+        -------
+        None.
+    
+        """
+        
+        Z_short_DUT = 1e-2 
+        Z_short_CEA = 1e-2
+        
+        if not freq:
+            freq = rf.Frequency(self.f, unit='Hz', npoints=1)
+        
+        # DUT Branch
+        # NB : CEA: Dout/Dint=219/140 -> 26.82 Ohm 
+        #      SSA13, CCFE Home-made: 219/126 -> 33.14 Ohm
+        #      SSA50: 219/127.92 -> 32.2 Ohm
+        D4_ = Coaxial(frequency=freq, Dint=0.1279, Dout=0.219, epsilon_r=1, sigma=conductivity_Cu)
+        D4 = D4_.line(self.L_DUT, unit='m', name='D4')        
+        D3 = Coaxial(frequency=freq, Dint=0.1683, Dout=0.230, epsilon_r=1, sigma=conductivity_Cu).line(1100e-3, unit='m', name='D3')
+        D2 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Cu).line(1021e-3, unit='m', name='D2')
+        D1 = Coaxial(frequency=freq, Dint=0.100,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(100e-3, unit='m', name='D1')
+        D0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(114e-3, unit='m', name='D0')
+        
+        # CEA Branch
+        C0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(728e-3, unit='m', name='C0') # coude
+        C1 = Coaxial(frequency=freq, Dint=0.100, Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(100e-3, unit='m', name='C1')
+        C2 = Coaxial(frequency=freq, Dint=0.140, Dout=0.230, epsilon_r=1, sigma=conductivity_SS).line(1512e-3, unit='m', name='C2')
+        C3_ = Coaxial(frequency=freq, Dint=0.140, Dout=0.219, epsilon_r=1, sigma=conductivity_Cu)
+        C3 = C3_.line(self.L_CEA, unit='m', name='C3')
+        
+        port1 = rf.Circuit.Port(frequency=freq, z0=self.R, name='port1')
+        resistor_dut = D4_.resistor(self.Z_short_DUT, name='short_dut')
+        resistor_cea = C3_.resistor(self.Z_short_CEA, name='short_cea')
+        gnd_dut = rf.Circuit.Ground(frequency=freq, z0=D4_.z0[0], name='gnd_dut')
+        gnd_cea = rf.Circuit.Ground(frequency=freq, z0=C3_.z0[0], name='gnd_cea')
+        
+        cnx = [
+            # T-junction
+            [(port1, 0), (D0, 0), (C0, 0)],
+            # DUT Branch
+            [(D0, 1), (D1, 0)],
+            [(D1, 1), (D2, 0)],
+            [(D2, 1), (D3, 0)],
+            [(D3, 1), (D4, 0)],
+            [(D4, 1), (resistor_dut, 0)],
+            [(resistor_dut, 1), (gnd_dut, 0)],
+            # CEA branch
+            [(C0, 1), (C1, 0)],
+            [(C1, 1), (C2, 0)],
+            [(C2, 1), (C3, 0)],
+            [(C3, 1), (resistor_cea, 0)],
+            [(resistor_cea, 1), (gnd_cea, 0)],
+        ]
+        circuit = rf.Circuit(cnx)
+        
+        return circuit
