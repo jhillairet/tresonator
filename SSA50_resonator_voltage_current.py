@@ -8,19 +8,19 @@ import tresonator as T
 import matplotlib.pyplot as plt
 import numpy as np
 
-f = 62.90e6 # Hz
+f = 62.64e6 # Hz
 P_in = 80e3 # W
 
 # setup the initial resonator configuration, in which L_DUT and L_CEA
 # are not the necessary optimum values
-Lsc_DUT = 0.0426 # m
-Lsc_CEA = 0.0586 # m
+Lsc_DUT = 0.035 # m
+Lsc_CEA = 0.027 # m
 
 
 cfg = T.Configuration(f, P_in, Lsc_DUT, Lsc_CEA, additional_losses=1)
 
 # Calculates the voltage and current along the transmission lines
-L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT = cfg.voltage_current();
+L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT = cfg.voltage_current()
     
 # Plotting V,I
 fig, ax = plt.subplots(2,1, sharex=True)
