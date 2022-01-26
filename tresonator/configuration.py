@@ -48,7 +48,7 @@ class Configuration(object):
         self.R = 29.8 # Ohm
         # Location of voltage probes on the resonator (starting from T)
         self.L_Vprobe_CEA_fromT = 1.236
-        self.L_Vprobe_DUT_fromT = 0.669
+        self.L_Vprobe_DUT_fromT = 0.660
         
         # Maximum number of iterations during a short lengths optimization
         self.NB_ITER_MAX = 5000
@@ -189,8 +189,9 @@ class Configuration(object):
         TL_indexes_CEA = [5,6,7,8]
 
         # calculate the voltage and current along the T-resonator branches
-        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_branch(Zin, Z_CEA[-1], TL_indexes_CEA)
         L_DUT, V_DUT, I_DUT, Z_DUT = self._voltage_current_branch(Zin, Z_DUT[-1], TL_indexes_DUT)
+        L_CEA, V_CEA, I_CEA, Z_CEA = self._voltage_current_branch(Zin, Z_CEA[-1], TL_indexes_CEA)
+
         
         return L_CEA, L_DUT, V_CEA, V_DUT, I_CEA, I_DUT
         
@@ -213,7 +214,7 @@ class Configuration(object):
         # For each transmission line section,
         # propagates the V,I,Z from the last section values to the length of current section
         for TL_index in TL_indexes:
-            _L = np.arange(start=0, stop=self.TLs[TL_index].L, step=dl)         
+            _L = np.arange(start=0, stop=self.TLs[TL_index].L, step=dl)
             for l in _L:
                 _V, _I = transfer_matrix(-l, V0[-1], I0[-1], self.TLs[TL_index].Zc, self.gammas[TL_index])
                 V.append(_V)
@@ -229,10 +230,10 @@ class Configuration(object):
             I0.append( I[-1] )
         
         # convert list into arrays
-        V = np.asarray(V)
-        I = np.asarray(I)
-        Z = np.asarray(Z)
-        L = np.concatenate(np.asarray([np.asarray(_L) for _L in L_full]))
+        V = np.array(V)
+        I = np.array(I)
+        Z = np.array(Z)
+        L = np.concatenate(np.array([np.array(_L) for _L in L_full], dtype=object))
         
         return L, V, I, Z
     
@@ -317,18 +318,34 @@ class Configuration(object):
         # NB : CEA: Dout/Dint=219/140 -> 26.82 Ohm 
         #      SSA13, CCFE Home-made: 219/126 -> 33.14 Ohm
         #      SSA50: 219/127.92 -> 32.2 Ohm
-        D4_ = Coaxial(frequency=freq, Dint=0.1279, Dout=0.219, epsilon_r=1, sigma=conductivity_Cu)
+        
+        # SSA84
+        # kind Dint[mm] Dout[mm] length[mm] sigma R[Ohm]
+        # Short 127.9 219.0 NaN NaN 0.00345
+        # Line 127.9 219.0 33.1 Copper NaN
+        # Line 168.3 230.0 1100.0 Copper NaN
+        # Line 140.0 230.0 1021.0 Copper NaN
+        # Line 100.0 230.0 100.0 Silver NaN
+        # Line 140.0 230.0 114.0 Silver NaN
+        # Tee 140.0 230.0 NaN Silver NaN
+        # Line 140.0 230.0 728.0 Silver NaN
+        # Line 100.0 230.0 100.0 Silver NaN
+        # Line 140.0 230.0 1512.0 Steel NaN
+        # Line 140.0 219.0 32.4 Steel NaN
+        # Short 140.0 219.0 NaN NaN 0.0068
+        
+        D4_ = Coaxial(frequency=freq, Dint=0.1279, Dout=0.219, epsilon_r=1, sigma=self.additional_losses*conductivity_Cu)
         D4 = D4_.line(self.L_DUT, unit='m', name='D4')        
-        D3 = Coaxial(frequency=freq, Dint=0.1683, Dout=0.230, epsilon_r=1, sigma=conductivity_Cu).line(1100e-3, unit='m', name='D3')
-        D2 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Cu).line(1021e-3, unit='m', name='D2')
-        D1 = Coaxial(frequency=freq, Dint=0.100,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(100e-3, unit='m', name='D1')
-        D0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(114e-3, unit='m', name='D0')
+        D3 = Coaxial(frequency=freq, Dint=0.1683, Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Cu).line(1100e-3, unit='m', name='D3')
+        D2 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Cu).line(1021e-3, unit='m', name='D2')
+        D1 = Coaxial(frequency=freq, Dint=0.100,  Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Ag).line(100e-3, unit='m', name='D1')
+        D0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Ag).line(114e-3, unit='m', name='D0')
         
         # CEA Branch
-        C0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(728e-3, unit='m', name='C0') # coude
-        C1 = Coaxial(frequency=freq, Dint=0.100, Dout=0.230, epsilon_r=1, sigma=conductivity_Ag).line(100e-3, unit='m', name='C1')
-        C2 = Coaxial(frequency=freq, Dint=0.140, Dout=0.230, epsilon_r=1, sigma=conductivity_SS).line(1512e-3, unit='m', name='C2')
-        C3_ = Coaxial(frequency=freq, Dint=0.140, Dout=0.219, epsilon_r=1, sigma=conductivity_Cu)
+        C0 = Coaxial(frequency=freq, Dint=0.140,  Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Ag).line(728e-3, unit='m', name='C0') # coude
+        C1 = Coaxial(frequency=freq, Dint=0.100, Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_Ag).line(100e-3, unit='m', name='C1')
+        C2 = Coaxial(frequency=freq, Dint=0.140, Dout=0.230, epsilon_r=1, sigma=self.additional_losses*conductivity_SS).line(1512e-3, unit='m', name='C2')
+        C3_ = Coaxial(frequency=freq, Dint=0.140, Dout=0.219, epsilon_r=1, sigma=self.additional_losses*conductivity_Cu)
         C3 = C3_.line(self.L_CEA, unit='m', name='C3')
         
         port1 = rf.Circuit.Port(frequency=freq, z0=self.R, name='port1')

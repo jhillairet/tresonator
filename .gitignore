@@ -1,0 +1,10 @@
+
+*.pyc
+
+tresonator/.ipynb_checkpoints/
+
+tests/.cache/
+
+.ipynb_checkpoints/
+
+.cache/

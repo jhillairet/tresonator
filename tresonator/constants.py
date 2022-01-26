@@ -12,4 +12,4 @@ Z0 = np.sqrt(mu_0/epsilon_0)
 conductivity_SS = 1.32e6 # 1.45e6 in Wikipedia
 conductivity_Cu = 5.8e7 # Annealed copper.  5.96e7 for pure Cu in Wikipedia
 conductivity_Ag = 6.3e7 # Wikipedia
-
+conductivity_Al = 1/2.65e-8 #3.8e7 # Wikipedia
